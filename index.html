@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" id="themeColor" content="#01696f">
+  <meta name="description" content="Track your daily medication doses.">
+  <title>Medication Dose Tracker</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --sp1:.25rem; --sp2:.5rem; --sp3:.75rem; --sp4:1rem; --sp5:1.25rem; --sp6:1.5rem; --sp8:2rem;
+      --bg:#f7f6f2; --surf:#f9f8f5; --surf2:#fbfbf9; --surfoff:#edeae5;
+      --border:rgba(40,37,29,0.12); --text:#28251d; --muted:#6f6d67; --faint:#9a9891; --inv:#f9f8f4;
+      --pri:#01696f; --pri-h:#0c4e54; --pri-hi:#cedcd8;
+      --warn:#964219; --ok:#2f8f59; --ok-hi:#d3e5db;
+      --r-sm:.375rem; --r-md:.75rem; --r-lg:1rem; --r-xl:1.25rem; --r-full:9999px;
+      --sh-sm:0 1px 2px rgba(40,37,29,.06); --sh-md:0 10px 30px rgba(40,37,29,.10);
+      --ease:180ms cubic-bezier(0.16,1,0.3,1);
+      --font:'Satoshi','Inter',sans-serif;
+    }
+    [data-theme="dark"] {
+      --bg:#171614; --surf:#1c1b19; --surf2:#201f1d; --surfoff:#282724;
+      --border:rgba(255,255,255,0.09); --text:#cdccca; --muted:#9f9d9a; --faint:#6a6866; --inv:#171614;
+      --pri:#4f98a3; --pri-h:#227f8b; --pri-hi:#2a3838;
+      --warn:#bb653b; --ok:#69c58c; --ok-hi:#1e3328;
+      --sh-sm:0 1px 2px rgba(0,0,0,.25); --sh-md:0 10px 30px rgba(0,0,0,.4);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth}
+    body{
+      min-height:100dvh;font-family:var(--font);font-size:var(--text-base);line-height:1.6;
+      color:var(--text);
+      background:radial-gradient(ellipse at top,color-mix(in srgb,var(--pri) 8%,transparent),transparent 50%),var(--bg);
+      display:flex;justify-content:center;
+      padding:max(var(--sp4),env(safe-area-inset-top)) var(--sp4) max(var(--sp6),env(safe-area-inset-bottom));
+    }
+    button,input{font:inherit;color:inherit}
+    button{cursor:pointer;border:none;background:none}
+    :focus-visible{outline:2px solid var(--pri);outline-offset:3px;border-radius:var(--r-sm)}
+    img,svg{display:block}
+    .app{width:min(100%,32rem);display:grid;gap:var(--sp4);align-content:start}
+    .card{
+      background:color-mix(in srgb,var(--surf) 95%,transparent);
+      border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--sh-md);
+      backdrop-filter:blur(10px);
+    }
+
+    /* HEADER */
+    .header{padding:var(--sp5);display:flex;align-items:center;justify-content:space-between;gap:var(--sp4)}
+    .brand{display:flex;align-items:center;gap:var(--sp3)}
+    .logo{
+      width:2.75rem;height:2.75rem;border-radius:var(--r-lg);
+      background:var(--pri-hi);color:var(--pri);display:grid;place-items:center;flex-shrink:0;
+    }
+    .title{font-size:var(--text-lg);font-weight:700;line-height:1.2}
+    .subtitle{font-size:var(--text-sm);color:var(--muted)}
+    .theme-toggle{
+      min-width:2.75rem;min-height:2.75rem;border-radius:var(--r-full);
+      background:var(--surf2);border:1px solid var(--border);display:grid;place-items:center;flex-shrink:0;
+      transition:background var(--ease),border-color var(--ease);
+    }
+    .theme-toggle:hover{background:var(--surfoff)}
+
+    /* HERO */
+    .hero{padding:var(--sp5);display:grid;gap:var(--sp5)}
+
+    /* TARGET */
+    .target-panel{
+      display:grid;gap:var(--sp2);justify-items:center;
+      padding:var(--sp3) var(--sp4);border-radius:var(--r-lg);
+      background:var(--surf2);border:1px solid var(--border);
+    }
+    .target-label{font-size:var(--text-sm);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .target-control{display:flex;align-items:center;gap:var(--sp3)}
+    .target-step{
+      width:2.75rem;height:2.75rem;border-radius:var(--r-full);font-size:1.4rem;font-weight:700;
+      background:var(--surfoff);border:1px solid var(--border);
+      display:grid;place-items:center;line-height:1;
+      transition:background var(--ease),transform var(--ease);
+    }
+    .target-step:hover{background:var(--pri-hi);color:var(--pri)}
+    .target-step:active{transform:scale(0.92)}
+    .target-value{font-size:var(--text-xl);font-weight:700;min-width:2.5rem;text-align:center;line-height:1;font-variant-numeric:tabular-nums}
+    .target-hint{font-size:var(--text-xs);color:var(--faint)}
+
+    /* RING */
+    .ring-wrap{display:grid;place-items:center}
+    .ring-svg{width:min(68vw,14rem);height:min(68vw,14rem);overflow:visible;transition:transform var(--ease)}
+    .ring-svg:active{transform:scale(0.97)}
+    .ring-bg{fill:none;stroke:var(--surfoff);stroke-width:12}
+    .ring-fill{
+      fill:none;stroke-width:12;stroke-linecap:round;
+      stroke:var(--pri);
+      stroke-dasharray:var(--circ,339.29);
+      stroke-dashoffset:var(--offset,339.29);
+      transform:rotate(-90deg);transform-origin:center;
+      transition:stroke-dashoffset .5s cubic-bezier(0.16,1,0.3,1),stroke .4s ease;
+    }
+    .ring-fill.done{stroke:var(--ok)}
+    .ring-center{font-family:var(--font)}
+    .ring-count{font-size:2.4rem;font-weight:700;fill:var(--text);font-variant-numeric:tabular-nums;dominant-baseline:middle;text-anchor:middle}
+
+    /* PILL ICONS */
+    .icon-row{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--sp2);min-height:2rem}
+    .pill-icon{
+      width:1.75rem;height:1.75rem;border-radius:var(--r-full);
+      background:var(--pri-hi);color:var(--pri);
+      border:1px solid color-mix(in srgb,var(--pri) 20%,transparent);
+      display:grid;place-items:center;
+      animation:pop 220ms cubic-bezier(0.16,1,0.3,1) forwards;
+      transform:scale(0);opacity:0;
+    }
+    .pill-icon.done-icon{background:var(--ok-hi);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 20%,transparent)}
+    @keyframes pop{to{transform:scale(1);opacity:1}}
+
+    /* ACTIONS */
+    .actions{display:grid;gap:var(--sp3)}
+    .dose-btn{
+      min-height:4rem;border-radius:var(--r-xl);
+      background:var(--pri);color:var(--inv);
+      font-size:var(--text-base);font-weight:700;letter-spacing:.01em;
+      box-shadow:var(--sh-sm);border:none;
+      transition:background var(--ease),transform var(--ease),box-shadow var(--ease);
+    }
+    .dose-btn:hover{background:var(--pri-h)}
+    .dose-btn:active{transform:translateY(1px) scale(0.997);box-shadow:none}
+    .dose-btn.done{background:var(--ok)}
+    .dose-btn.done:hover{background:color-mix(in srgb,var(--ok) 85%,black)}
+    .sec-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3)}
+    .ghost-btn,.warn-btn{
+      min-height:3.25rem;border-radius:var(--r-lg);
+      background:var(--surf2);border:1px solid var(--border);
+      font-size:var(--text-sm);font-weight:600;
+      transition:background var(--ease),opacity var(--ease);
+    }
+    .ghost-btn:hover,.warn-btn:hover{background:var(--surfoff)}
+    .ghost-btn:disabled{opacity:.4;pointer-events:none}
+    .warn-btn{color:var(--warn)}
+
+    /* LOG PANEL */
+    .panel{padding:var(--sp5);display:grid;gap:var(--sp4)}
+    .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp3)}
+    .panel-title{font-size:var(--text-base);font-weight:700}
+    .panel-meta{font-size:var(--text-sm);color:var(--muted)}
+    .log-list{list-style:none;display:grid;gap:var(--sp2)}
+    .log-item{
+      display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);
+      padding:var(--sp3) var(--sp4);border-radius:var(--r-lg);
+      background:var(--surf2);border:1px solid var(--border);
+      animation:fadeup 200ms ease forwards;
+    }
+    @keyframes fadeup{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .log-info{}
+    .log-time{font-weight:600;font-size:var(--text-sm);font-variant-numeric:tabular-nums}
+    .log-num{font-size:var(--text-xs);color:var(--muted)}
+    .log-remove{
+      min-width:2.75rem;min-height:2.75rem;border-radius:var(--r-full);
+      border:1px solid color-mix(in srgb,var(--warn) 25%,transparent);
+      color:var(--warn);display:grid;place-items:center;flex-shrink:0;
+      transition:background var(--ease);
+    }
+    .log-remove:hover{background:color-mix(in srgb,var(--warn) 10%,transparent)}
+    .empty-state{
+      padding:var(--sp5);border-radius:var(--r-lg);
+      background:var(--surf2);text-align:center;
+      color:var(--muted);font-size:var(--text-sm);
+      border:1px dashed var(--border);
+    }
+    .footer-note{text-align:center;color:var(--faint);font-size:var(--text-xs);padding-bottom:var(--sp2)}
+    .toast{
+      position:fixed;left:50%;bottom:max(1.25rem,env(safe-area-inset-bottom));
+      transform:translateX(-50%) translateY(0.75rem);
+      background:var(--text);color:var(--inv);
+      padding:var(--sp3) var(--sp5);border-radius:var(--r-full);
+      font-size:var(--text-sm);font-weight:500;
+      opacity:0;pointer-events:none;white-space:nowrap;
+      box-shadow:var(--sh-md);
+      transition:opacity var(--ease),transform var(--ease);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+  </style>
+</head>
+<body>
+<a class="sr-only" href="#main">Skip to content</a>
+<main class="app" id="main">
+
+  <!-- HEADER -->
+  <header class="card header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="4" y="6" width="16" height="12" rx="6"/>
+          <line x1="12" y1="6" x2="12" y2="18"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="title">Dose Tracker</h1>
+        <p class="subtitle" id="todayLabel">Today</p>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode" id="themeToggle">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- HERO -->
+  <section class="card hero" aria-label="Dose progress">
+
+    <!-- Daily target control -->
+    <div class="target-panel">
+      <div class="target-label">Daily target</div>
+      <div class="target-control">
+        <button class="target-step" type="button" id="decBtn" aria-label="Decrease target">−</button>
+        <div class="target-value" id="targetDisplay" aria-live="polite" aria-label="Daily dose target">4</div>
+        <button class="target-step" type="button" id="incBtn" aria-label="Increase target">+</button>
+      </div>
+      <div class="target-hint">doses per day</div>
+    </div>
+
+    <!-- Progress ring -->
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 120 120" aria-hidden="true" id="ringSvg">
+        <circle class="ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="54"/>
+        <text class="ring-count" id="ringCount" x="60" y="64">0</text>
+      </svg>
+    </div>
+
+    <!-- Pill icons -->
+    <div class="icon-row" id="iconRow" aria-label="Doses taken today"></div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="dose-btn" id="doseBtn" type="button">Take dose now</button>
+      <div class="sec-row">
+        <button class="ghost-btn" id="undoBtn" type="button" disabled>Undo last</button>
+        <button class="warn-btn" id="clearBtn" type="button">Clear today</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- LOG -->
+  <section class="card panel" aria-labelledby="logTitle">
+    <div class="panel-head">
+      <h2 class="panel-title" id="logTitle">Today's log</h2>
+      <span class="panel-meta" id="logMeta" aria-live="polite"></span>
+    </div>
+    <ul class="log-list" id="logList" aria-live="polite"></ul>
+    <div class="empty-state" id="emptyState">Tap the button above when you take a dose.</div>
+  </section>
+
+  <p class="footer-note">Counter resets automatically at midnight &middot; Works offline</p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── Constants ─── */
+  const CIRC = 2 * Math.PI * 54; // SVG circle circumference
+  const STORAGE_KEY = 'dose-tracker-v2';
+  const DEFAULT_TARGET = 4;
+
+  /* ─── State ─── */
+  let state = load();
+  let midnightTimer = null;
+
+  /* ─── DOM refs ─── */
+  const $ = id => document.getElementById(id);
+  const els = {
+    todayLabel: $('todayLabel'),
+    targetDisplay: $('targetDisplay'),
+    decBtn: $('decBtn'),
+    incBtn: $('incBtn'),
+    ringFill: $('ringFill'),
+    ringCount: $('ringCount'),
+    iconRow: $('iconRow'),
+    doseBtn: $('doseBtn'),
+    undoBtn: $('undoBtn'),
+    clearBtn: $('clearBtn'),
+    logList: $('logList'),
+    logMeta: $('logMeta'),
+    emptyState: $('emptyState'),
+    toast: $('toast'),
+    themeToggle: $('themeToggle'),
+  };
+
+  /* ─── Persistence ─── */
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return fresh();
+      const p = JSON.parse(raw);
+      const target = typeof p.target === 'number' && p.target >= 1 ? Math.min(24, p.target) : DEFAULT_TARGET;
+      if (p.day !== todayKey()) return { day: todayKey(), doses: [], target };
+      return { day: p.day, doses: Array.isArray(p.doses) ? p.doses.map(Number).filter(Boolean) : [], target };
+    } catch { return fresh(); }
+  }
+
+  function fresh() { return { day: todayKey(), doses: [], target: DEFAULT_TARGET }; }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
+
+  /* ─── Day check ─── */
+  function checkDay() {
+    if (state.day !== todayKey()) {
+      state = { day: todayKey(), doses: [], target: state.target };
+      save();
+      showToast('New day — counter reset');
+    }
+  }
+
+  function scheduleMidnight() {
+    clearTimeout(midnightTimer);
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5).getTime() - now.getTime();
+    midnightTimer = setTimeout(() => { checkDay(); render(); scheduleMidnight(); }, msUntilMidnight);
+  }
+
+  /* ─── Actions ─── */
+  function addDose() {
+    checkDay();
+    state.doses.push(Date.now());
+    save();
+    render();
+    showToast('Dose recorded');
+  }
+
+  function undoLast() {
+    checkDay();
+    if (!state.doses.length) { showToast('Nothing to undo'); return; }
+    state.doses.pop();
+    save();
+    render();
+    showToast('Last dose removed');
+  }
+
+  function removeDose(i) {
+    checkDay();
+    if (i < 0 || i >= state.doses.length) return;
+    state.doses.splice(i, 1);
+    save();
+    render();
+    showToast('Dose removed');
+  }
+
+  function clearToday() {
+    checkDay();
+    if (!state.doses.length) { showToast('Nothing to clear'); return; }
+    if (!confirm('Clear all doses for today?')) return;
+    state.doses = [];
+    save();
+    render();
+    showToast('Today cleared');
+  }
+
+  function setTarget(n) {
+    const t = Math.max(1, Math.min(24, Math.round(n)));
+    state.target = t;
+    save();
+    render();
+  }
+
+  /* ─── Render ─── */
+  function formatDay() {
+    return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
+  }
+
+  function formatTime(ts) {
+    return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(new Date(ts));
+  }
+
+  function render() {
+    checkDay();
+    const { doses, target } = state;
+    const count = doses.length;
+    const done = count >= target;
+    const progress = Math.min(count / target, 1);
+
+    // Header date
+    els.todayLabel.textContent = formatDay();
+
+    // Target control
+    els.targetDisplay.textContent = target;
+    els.decBtn.disabled = target <= 1;
+    els.incBtn.disabled = target >= 24;
+
+    // Ring
+    const offset = CIRC * (1 - progress);
+    els.ringFill.style.setProperty('--circ', CIRC);
+    els.ringFill.style.setProperty('--offset', offset);
+    els.ringFill.style.strokeDasharray = CIRC;
+    els.ringFill.style.strokeDashoffset = offset;
+    els.ringFill.classList.toggle('done', done);
+    els.ringCount.textContent = count;
+
+    // Pill icons
+    els.iconRow.innerHTML = doses.map((_, i) =>
+      `<span class="pill-icon${done ? ' done-icon' : ''}" aria-hidden="true" style="animation-delay:${i * 30}ms">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <rect x="4" y="7" width="16" height="10" rx="5"/>
+          <line x1="12" y1="7" x2="12" y2="17"/>
+        </svg>
+      </span>`
+    ).join('');
+
+    // Main button state
+    els.doseBtn.classList.toggle('done', done);
+    els.doseBtn.textContent = done ? 'Take another dose' : 'Take dose now';
+
+    // Secondary buttons
+    els.undoBtn.disabled = count === 0;
+
+    // Log meta
+    if (count === 0) {
+      els.logMeta.textContent = '';
+    } else if (done) {
+      els.logMeta.textContent = `${count} dose${count !== 1 ? 's' : ''} · target reached ✓`;
+    } else {
+      els.logMeta.textContent = `${count} of ${target} doses`;
+    }
+
+    // Log entries (newest first)
+    if (count === 0) {
+      els.logList.innerHTML = '';
+      els.emptyState.hidden = false;
+      els.emptyState.textContent = `Tap the button above when you take a dose. Daily target: ${target}.`;
+    } else {
+      els.emptyState.hidden = true;
+      const items = [...doses].reverse().map((ts, ri) => {
+        const realIndex = doses.length - 1 - ri;
+        const doseNum = realIndex + 1;
+        return `<li class="log-item">
+          <div class="log-info">
+            <div class="log-time">${formatTime(ts)}</div>
+            <div class="log-num">Dose ${doseNum}</div>
+          </div>
+          <button class="log-remove" type="button"
+            aria-label="Remove dose ${doseNum} at ${formatTime(ts)}"
+            data-index="${realIndex}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </li>`;
+      });
+      els.logList.innerHTML = items.join('');
+    }
+  }
+
+  /* ─── Toast ─── */
+  let toastTimer;
+  function showToast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2000);
+  }
+
+  /* ─── Theme ─── */
+  let theme = 'light';
+
+  function applyTheme(t) {
+    theme = t;
+    document.documentElement.setAttribute('data-theme', t);
+    const isDark = t === 'dark';
+    els.themeToggle.innerHTML = isDark
+      ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+           <circle cx="12" cy="12" r="5"/>
+           <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+           <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+         </svg>`
+      : `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+         </svg>`;
+    $('themeColor').content = isDark ? '#1c1b19' : '#01696f';
+  }
+
+  function initTheme() {
+    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => applyTheme(e.matches ? 'dark' : 'light'));
+  }
+
+  /* ─── Events ─── */
+  els.doseBtn.addEventListener('click', addDose);
+  els.undoBtn.addEventListener('click', undoLast);
+  els.clearBtn.addEventListener('click', clearToday);
+  els.decBtn.addEventListener('click', () => setTarget(state.target - 1));
+  els.incBtn.addEventListener('click', () => setTarget(state.target + 1));
+  els.themeToggle.addEventListener('click', () => applyTheme(theme === 'dark' ? 'light' : 'dark'));
+
+  els.logList.addEventListener('click', e => {
+    const btn = e.target.closest('[data-index]');
+    if (!btn) return;
+    removeDose(Number(btn.dataset.index));
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { checkDay(); render(); scheduleMidnight(); }
+  });
+
+  /* ─── Service worker ─── */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+  }
+
+  /* ─── Boot ─── */
+  initTheme();
+  render();
+  scheduleMidnight();
+
+})();
+</script>
+</body>
+</html>
