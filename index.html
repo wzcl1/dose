@@ -92,7 +92,7 @@
 
     /* RING */
     .ring-wrap{display:grid;place-items:center}
-    .ring-svg{width:min(68vw,14rem);height:min(68vw,14rem);overflow:visible;cursor:pointer;transition:transform var(--ease);-webkit-tap-highlight-color:transparent}
+    .ring-svg{width:min(68vw,14rem);height:min(68vw,14rem);overflow:visible;cursor:pointer;transition:transform var(--ease);-webkit-tap-highlight-color:transparent;outline:none!important;-webkit-user-select:none}
     .ring-svg:focus-visible{outline:none}
     .ring-svg:active{transform:scale(0.97)}
     .ring-bg{fill:none;stroke:var(--surfoff);stroke-width:12}
@@ -231,7 +231,7 @@
 
     <!-- Progress ring -->
     <div class="ring-wrap">
-      <svg class="ring-svg" viewBox="0 0 120 120" role="button" tabindex="0" aria-label="Record a dose" id="ringSvg">
+      <svg class="ring-svg" viewBox="0 0 120 120" role="button" aria-label="Record a dose" id="ringSvg">
         <circle class="ring-bg" cx="60" cy="60" r="54"/>
         <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="54"/>
         <text class="ring-count" id="ringCount" x="60" y="64">0</text>
