@@ -92,7 +92,7 @@
 
     /* RING */
     .ring-wrap{display:grid;place-items:center}
-    .ring-svg{width:min(68vw,14rem);height:min(68vw,14rem);overflow:visible;transition:transform var(--ease)}
+    .ring-svg{width:min(68vw,14rem);height:min(68vw,14rem);overflow:visible;cursor:pointer;transition:transform var(--ease)}
     .ring-svg:active{transform:scale(0.97)}
     .ring-bg{fill:none;stroke:var(--surfoff);stroke-width:12}
     .ring-fill{
@@ -230,7 +230,7 @@
 
     <!-- Progress ring -->
     <div class="ring-wrap">
-      <svg class="ring-svg" viewBox="0 0 120 120" aria-hidden="true" id="ringSvg">
+      <svg class="ring-svg" viewBox="0 0 120 120" role="button" tabindex="0" aria-label="Record a dose" id="ringSvg">
         <circle class="ring-bg" cx="60" cy="60" r="54"/>
         <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="54"/>
         <text class="ring-count" id="ringCount" x="60" y="64">0</text>
@@ -278,6 +278,7 @@
   /* ─── State ─── */
   let state = load();
   let midnightTimer = null;
+  let storageBroken = false;
 
   /* ─── DOM refs ─── */
   const $ = id => document.getElementById(id);
@@ -288,6 +289,7 @@
     incBtn: $('incBtn'),
     ringFill: $('ringFill'),
     ringCount: $('ringCount'),
+    ringSvg: $('ringSvg'),
     iconRow: $('iconRow'),
     doseBtn: $('doseBtn'),
     undoBtn: $('undoBtn'),
@@ -319,7 +321,7 @@
   function fresh() { return { day: todayKey(), doses: [], target: DEFAULT_TARGET }; }
 
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); storageBroken = false; } catch { storageBroken = true; showToast('Warning: data cannot be saved (storage full or disabled)'); }
   }
 
   /* ─── Day check ─── */
@@ -485,6 +487,7 @@
   function applyTheme(t) {
     theme = t;
     document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('dose-theme', t); } catch {}
     const isDark = t === 'dark';
     els.themeToggle.innerHTML = isDark
       ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -501,11 +504,19 @@
   }
 
   function initTheme() {
-    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => applyTheme(e.matches ? 'dark' : 'light'));
+    const saved = (() => { try { return localStorage.getItem('dose-theme'); } catch { return null; } })();
+    if (saved === 'dark' || saved === 'light') { applyTheme(saved); }
+    else { applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      // Only follow system if user hasn't set a preference
+      const current = (() => { try { return localStorage.getItem('dose-theme'); } catch { return null; } })();
+      if (!current) applyTheme(e.matches ? 'dark' : 'light');
+    });
   }
 
   /* ─── Events ─── */
+  els.ringSvg.addEventListener('click', addDose);
+  els.ringSvg.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addDose(); } });
   els.doseBtn.addEventListener('click', addDose);
   els.undoBtn.addEventListener('click', undoLast);
   els.clearBtn.addEventListener('click', clearToday);
